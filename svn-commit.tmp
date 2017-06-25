@@ -1,0 +1,9 @@
+
+--This line, and those below, will be ignored--
+
+M    design.txt
+M    kern/include/addrspace.h
+M    kern/include/vm.h
+M    kern/vm/addrspace.c
+M    kern/vm/frametable.c
+M    kern/vm/vm.c

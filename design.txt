@@ -1,0 +1,105 @@
+OS ASST3 Design Doc
+ 
+1. Memory management
+ 
+Put all the functions/structures in frametable.c, and put frametable_init() in vm_bootstrap().
+ 
+Data structure for frame_table and frame_table entry are as following:
+struct frame_table_entry {
+        paddr_t corresponding_paddr;
+        struct frame_table_entry * next_free;
+        bool in_use_flag;
+};
+ 
+struct frame_table {
+        struct frame_table_entry * frame_table_arr;
+        // point to the lowest free_frame in frame_table_arr,
+        // used in finding the next free frame
+        struct frame_table_entry * lowest_free_frame_entry;
+        // before is the frames allocated to kernel and frame table itself
+        int free_ram_frame_start_index;
+        // total frame/physical page there will be
+        int page_number;
+};
+ 
+Use the frame_table structure instead of struct frame_table_entry * frame_table, due to we find that I need to record multiple info to make the O(1) complexity for malloc and free.
+ 
+We choose to put frame_table in the bottom of RAM, do this by using ram_stealmem, use the skill mentioned in lecture
+```
+struct frame_table * ft_table = 0;
+/** in alloc_kpage() **/
+if (ft_table == 0) {
+    // use ram_stealmem
+} else {
+    // use frame_table
+}
+```
+ 
+ 
+2. Address space design, region design
+struct region {
+    vaddr_t vbase;
+    size_t npages;
+    int is_readable;
+    int is_writeable;
+    int is_executable;
+    bool prepare_load_recover_flag;
+    struct region* next_region;
+};
+ 
+struct addrspace {
+#if OPT_DUMBVM
+        vaddr_t as_vbase1;
+        paddr_t as_pbase1;
+        size_t as_npages1;
+        vaddr_t as_vbase2;
+        paddr_t as_pbase2;
+        size_t as_npages2;
+        paddr_t as_stackpbase;
+#else
+        /* Put stuff here for your VM system */
+        int num_regions;
+        // use linked_list to organize the regions
+        struct region* first_region;
+#endif
+};
+
+
+The underlying data structure is linked-list for regions, and so that we can do copy&delete in recursive style.
+ 
+`prepare_load_recover_flag` is used in `as_prepare_load` and `as_complete_load`, since when load some read-only regions, you need to make it writable for a while in `as_prepare_load`, and then set it back to read only in `as_complete_load`.
+ 
+`as_define_stack` could make use of `as_define_region` to define stack regions, and as it mentioned in spec, the number of regions of stack is 16.
+ 
+`as_activate` and `as_deactivate` flush the TLB.
+ 
+ 
+3. Hash Paged Table
+ 
+Structure for hpt_entry&hpt as following:
+struct hpt_entry {
+    struct addrspace * Pid;
+    vaddr_t VPN;
+    paddr_t PFN; 
+    struct hpt_entry * next_entry;
+};
+ 
+struct hpt_entry * hash_page_table;
+ 
+Pid is the ASID, as suggested in spec.
+Put caching/dirty/valid bit in PFN as well, so that we can use 4 32bit word describe an entry. 
+Design it as a linked_list style entry list,  next_entry is the pointer to next entry instead of use `uint32_t index`, since we think it is easier to implement.
+VPN only contains the most sigficant 20 bits of corresponding virtual address. 
+ 
+When need to write to entryhi and entrylo, do not need to do any transformation, put VFN in entryhi, and PFN in entrylo. Leave the asid part of entryhi as 0. 
+ 
+The initialization of hpt, run`::hpt_init()` before `::frametable_init()`, allocate a range of memory for hash page table which won’t be managed by frame_table, so we need to put the hpt_init before frametable_init. 
+ 
+`vm_fault`, follow the work flow chart in lecture slide and we can make use some of ideas of `dumbvm.c`.
+ 
+Operation on hash page table: `::hpt_insert` and `::hpt_lookup`
+Try solve synchronization stuff in `::hpt_insert` `::hpt_lookup` by making use of a single lock.
+ 
+Write to tlb with `::tlb_random`, need to disable interrupt when write to TLB.
+ 
+ 

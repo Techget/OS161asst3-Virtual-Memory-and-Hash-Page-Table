@@ -1,0 +1,15 @@
+# Add any directories, files, or patterns you don't want to be tracked by version control
+$ cat .gitignore
+
+# Can ignore specific files
+.DS_Store
+
+# Use wildcards as well
+*~
+*.swp
+
+# Can also ignore all directories and files in a directory.
+kern/compile/*
+build/*
+.svn/*
+Makefile
