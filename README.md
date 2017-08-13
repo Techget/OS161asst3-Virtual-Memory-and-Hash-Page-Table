@@ -1,6 +1,8 @@
-Basic compiling stuff
+# Basic compiling stuff 
+
+(refer to http://cgi.cse.unsw.edu.au/~cs3231/17s1/assignments/asst3/)
+
 Building a Kernel
-Now to the business end of this exercise. You will now build and install a kernel.
 
     You first have to configure your source tree. This step sets up some information for later compilation, such as the location of various directories, the compiler to use, and compilation flags to supply.
 
@@ -42,8 +44,6 @@ If you have made it this far, your have built and installed the entire OS. Now i
     Power off the machine by typing q at the menu prompt. 
 
 Using GDB
-
-I cannot stress strongly enough to you the need to learn to use GDB. Read the directions and short tutorial on using GDB with OS/161.
 
 Note: the version of GDB used for these assignments is os161-gdb.
 Modifying your Kernel
